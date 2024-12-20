@@ -1,4 +1,13 @@
-# raspberrypi
+# raspberry pi 4 setup
+## install miniconda
+```
+  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O ~/miniconda3/miniconda.sh
+  bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+  rm ~/miniconda3/miniconda.sh
+
+  source ~/miniconda3/bin/activate
+  conda list
+```
 ## setup git connection
 ```
 user_name@piiv:~/raspberrypi $ ssh-keygen -t rsa -b 4096 -C "jindong-pan@foxmail.com"
