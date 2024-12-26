@@ -42,3 +42,7 @@ Hi jindong-pan! You've successfully authenticated, but GitHub does not provide s
 user_name@piiv:~/raspberrypi $ 
 
 ```
+# backup
+```
+sudo dd bs=4M if=/dev/mmcblk0p2 |gzip > /media/jeremy/Ventoy/piiv.img.gz
+```
