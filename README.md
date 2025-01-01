@@ -46,3 +46,15 @@ user_name@piiv:~/raspberrypi $
 ```
 sudo dd bs=4M if=/dev/mmcblk0p2 |gzip > /media/jeremy/Ventoy/piiv.img.gz
 ```
+# ascii art
+```
+sudo apt install jp2a #ascii art image2ascii
+sudo apt install cowsay #ascii art
+sudo apt install aewan #ascii art aewan:multi-layered ASCII graph editor (aecat hello)
+sudo apt install lolcat #ascii art pipe color
+```
+# game
+```
+sudo apt install pacman4console #game
+sudo apt install ninvaders #game
+```
