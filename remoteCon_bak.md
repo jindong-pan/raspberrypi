@@ -5,6 +5,23 @@
   - rsync -auzr [USER]@[RASPBERRY_IP]:/home/pat/backups/* /home/[USER]/backups_pi/
 * From the Raspberry Pi:
   - rsync -auzr /home/pat/backups/* [USER]@[COMPUTER_IP]:/home/[USER]/backups_pi/
+# system backup
+```
+sudo tar czf /backup.tar.gz \
+    --exclude=/backup.tar.gz \
+    --exclude=/dev \
+    --exclude=/mnt \
+    --exclude=/proc \
+    --exclude=/sys \
+    --exclude=/tmp \
+    --exclude=/media \
+    --exclude=/lost+found \
+    /
+```
+* restore
+  - Mount the bad system under /media or /mnt and 
+  - then run: tar xf /path/to/drive/with/backup.tar.gz -C /mnt (or /media).
+
 # connection
 * First, generate a key on your computer (if you have already one, skip to the next step):
 ```

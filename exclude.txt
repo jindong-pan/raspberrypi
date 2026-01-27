@@ -1,0 +1,9 @@
+/proc/*
+/sys/*
+/dev/*
+/tmp/*
+/run/*
+/mnt/*
+/media/*
+/lost+found
+/home/jeremy/miniconda3/*
