@@ -104,3 +104,82 @@ nikto -h http://[你的伺服器IP]
 **「攻擊是為了更好的防禦。」** 你想先從哪一個實驗開始？我建議從 **Nmap 掃描** 開始，確認你的 Tailscale 隧道是否真的把你的伺服器完美「隱身」了。
 
 **Would you like me to ... (幫你寫一個簡單的腳本，自動偵測並彙整這些掃描結果嗎？)**
+To see if your **mypi** server is safe, you should perform both an **external scan** (what your roommates see) and an **internal audit** (what the system sees).
+
+Since you are already using **Nmap**, we’ll start there and then move to a more advanced auditing tool.
+
+### 1. The External Scan (Roommate Perspective)
+
+Run this from your **laptop** or another device on the same network. This confirms that your `iptables` redirection and `ufw` are working as expected.
+
+```bash
+# -sV: Detect versions, -p-: Scan ALL 65535 ports (slow but thorough)
+# --script vuln: Run basic vulnerability checks
+nmap -sV -p- --script vuln 192.168.1.120
+
+```
+
+**What you should see:**
+
+* **Port 22:** Should show your **Cowrie honeypot** (likely identified as a generic SSH server).
+* **Port 222:** Should show your **Real OpenSSH**.
+* **Other Ports:** Everything else should be `closed` or `filtered` (blocked by UFW).
+
+---
+
+### 2. The Internal Audit (System Perspective)
+
+For a deep dive into your Pi's internal security, I recommend **Lynis**. It’s an open-source auditing tool that scans your entire system for configuration mistakes and security holes.
+
+1. **Install Lynis:**
+`sudo apt update && sudo apt install lynis -y`
+2. **Run a full audit:**
+`sudo lynis audit system`
+
+**How to read the results:**
+Lynis will give you a **"Hardening Index"** score. Look specifically for the **[SUGGESTION]** and **[WARNING]** sections. It will tell you if your kernel is out of date, if your file permissions are too loose, or if your SSH configuration could be tighter.
+
+---
+
+### 3. Verify Your Honeypot Identity
+
+Since you set up the identity as **mypi**, you want to ensure no "meta-data" leaks your real name. Run this command to check what an attacker sees during the initial handshake:
+
+```bash
+# This shows the SSH version string
+nc -v 192.168.1.120 22
+
+```
+
+*If it returns `SSH-2.0-OpenSSH_9.2p1 Debian...`, it looks like a real server. If it says anything about "Cowrie," you need to edit your `cowrie.cfg` and change the `version_string`.*
+
+### Summary Checklist
+
+* [ ] **Nmap** confirms only 22, 222, and 8080 are open.
+* [ ] **Lynis** score is above 60 (a good starting goal for a home server).
+* [ ] **Handshake** doesn't mention "Cowrie" or your real name.
+
+---
+
+### 3. Final Verification of the "mypi" Identity
+
+Since Port 22 showed up as `ssh?`, let's make sure the **mypi** username is active. You can verify this by checking your Cowrie logs while you attempt a "fake" login from your laptop:
+
+1. **On your Laptop:** `ssh mypi@192.168.1.120` (Try a random password).
+2. **On your Server:** `pm2 logs ssh-honeypot`
+
+If you see the connection attempt show up in the PM2 logs, your **roommate-proof trap** is 100% operational.
+
+### 4. Safety Maintenance
+
+Since you are using **PM2** to manage these, they will survive a reboot. However, remember that **iptables** rules (the redirection from 22 to 2222) can sometimes reset after a reboot on some systems.
+
+**To make your redirection permanent, run:**
+
+```bash
+sudo apt install iptables-persistent
+sudo netfilter-persistent save
+
+```
+
+**Now that your server is locked down, would you like me to show you how to set up a "daily summary" script that Gathers all the IP addresses that tried to attack your honeypot and emails them to you?**
