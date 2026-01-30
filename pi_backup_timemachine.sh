@@ -34,6 +34,7 @@ sudo rsync -aAXvz --delete \
     "$SOURCE" "$TARGET_USER@$TARGET_IP:$CURRENT_BACKUP"
 
 # 備份完成後，更新 'latest' 軟連結指向最新一次備份
-ssh "$TARGET_USER@$TARGET_IP" "rm -rf $LATEST_LINK && ln -s $CURRENT_BACKUP $LATEST_LINK"
+echo update latest do following
+echo ssh "$TARGET_USER@$TARGET_IP" "rm -rf $LATEST_LINK && ln -s $CURRENT_BACKUP $LATEST_LINK"
 
 echo "✅ 備份完成！存儲於：$CURRENT_BACKUP"
