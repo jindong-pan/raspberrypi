@@ -1,0 +1,10 @@
+alias a_powersave='sudo cpufreq-set -g powersave'
+alias a_power900='sudo cpufreq-set -u 900 -d 600'
+alias a_performance='sudo cpufreq-set -g performance'
+alias a_cpu="vcgencmd measure_clock arm"
+alias a_ll='ls -l'
+alias a_la='ls -A'
+alias a_l='ls -CF'
+alias a_gpush='git push --set-upstream origin main'
+alias a_tmuxl='tmux list-keys -T prefix'
+alias a_ta='tmux attach -d || tmux new'
