@@ -19,7 +19,7 @@ Next, create a **Discord Webhook**:
 1. Go to your Discord Server Settings > Integrations > Webhooks.
 2. Create a "New Webhook," copy the **Webhook URL**, and keep it handy.
 
-### 1. Updated Script (`thermal_monitor.sh`)
+### 1. Updated Script (`cpu_thermal_monitor.sh`)
 
 Replace your previous script content with this. I've added a `while true` loop and a `sleep` command to keep the process alive for PM2 to manage.
 
@@ -69,7 +69,7 @@ done
 Run these commands to get the service running and ensure it survives a reboot:
 
 1. **Start the script:**
-`pm2 start thermal_monitor.sh --name "pi-thermal-guard"`
+`pm2 start cpu_thermal_monitor.sh --name "pi-thermal-guard"`
 2. **Verify it's running:**
 `pm2 list`
 3. **Setup Startup Persistence:**
