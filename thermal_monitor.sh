@@ -1,40 +1,63 @@
 #!/bin/bash
 
 # Configuration
-#THRESHOLD=70                 # Temp in Celsius to trigger slowdown
-THRESHOLD=60                 # Temp in Celsius to trigger slowdown
-#COOLDOWN=55                  # Temp to return to powersave
-COOLDOWN=50                  # Temp to return to powersave
+THRESHOLD=70
+COOLDOWN=55
 WEBHOOK_URL="https://discord.com/api/webhooks/1467242216769716442/EyX5JUx8RJAwHqUyNYiSAKvDFl_y20zmelZlOdT402M-g9afe3_A91cDQHQXU3x_606M"
+CONFIG_FILE="/home/jeremy/thermal.conf"
 
-# State Flag: 0 = Normal (600-900MHz), 1 = Throttled (600MHz Lock)
-# We start at 0 and force the initial state
-STATE=0
-sudo cpufreq-set -g ondemand -d 600M -u 1800M
+# Internal memory to track config changes
+LAST_THRESHOLD=$THRESHOLD
+LAST_COOLDOWN=$COOLDOWN
 
-echo "Thermal Monitor Started. Initial State: Normal (600-900MHz)"
+# Function to read config and alert on changes
+update_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+        
+        # Check if values changed since last loop
+        if [ "$THRESHOLD" != "$LAST_THRESHOLD" ] || [ "$COOLDOWN" != "$LAST_COOLDOWN" ]; then
+            MSG="⚙️ **Config Updated:** New Threshold: ${THRESHOLD}°C, New Cooldown: ${COOLDOWN}°C (Was: ${LAST_THRESHOLD}/${LAST_COOLDOWN})"
+            curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$MSG\"}" "$WEBHOOK_URL"
+            
+            # Update memory
+            LAST_THRESHOLD=$THRESHOLD
+            LAST_COOLDOWN=$COOLDOWN
+            echo "$(date): Configuration change detected and alerted."
+        fi
+    fi
+}
+
+echo "Thermal Monitor Service (v2) Started..."
 
 while true; do
+    update_config
+    
+    # 1. Gather hardware reality
     TEMP=$(vcgencmd measure_temp | egrep -o '[0-9]*\.[0-9]*')
     TEMP_INT=${TEMP%.*}
+    CURRENT_GOV=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+    
+    CUR_HZ=$(vcgencmd measure_clock arm | awk -F'=' '{print $2}')
+    CUR_MHZ=$((CUR_HZ / 1000000))
 
-    # TRIGGER THROTTLE: Temp > 70 and we are currently in Normal state
-    if [ "$TEMP_INT" -gt "$THRESHOLD" ] && [ "$STATE" -eq 0 ]; then
-        sudo cpufreq-set -g powersave -u 600M -d 600M
-        STATE=1
-        
-        MESSAGE="🔥 **Critical Temp Alert:** ${TEMP}°C. CPU locked to 600MHz."
-        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$MESSAGE\"}" $WEBHOOK_URL
-        echo "$(date): Switched to THROTTLED state."
+    # 2. CASE: HIGH TEMP + NEEDS THROTTLE (OR MANUAL OVERRIDE)
+    if [ "$TEMP_INT" -gt "$THRESHOLD" ]; then
+        if [ "$CURRENT_GOV" != "powersave" ] || [ "$CUR_MHZ" -gt 610 ]; then
+            sudo cpufreq-set -g powersave -u 600M -d 600M
+            
+            MESSAGE="🚨 **Thermal Action:** Temp: ${TEMP}°C. Hardware at ${CUR_MHZ}MHz. Forcing 600MHz lock."
+            curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$MESSAGE\"}" "$WEBHOOK_URL"
+        fi
 
-    # TRIGGER RECOVERY: Temp < 55 and we are currently in Throttled state
-    elif [ "$TEMP_INT" -lt "$COOLDOWN" ] && [ "$STATE" -eq 1 ]; then
-        sudo cpufreq-set -g ondemand -d 600M -u 900M
-        STATE=0
-        
-        MESSAGE="✅ **Cooling Down:** ${TEMP}°C. CPU reset to 600-900MHz range."
-        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$MESSAGE\"}" $WEBHOOK_URL
-        echo "$(date): Switched to NORMAL state."
+    # 3. CASE: COOL TEMP + NEEDS RECOVERY
+    elif [ "$TEMP_INT" -lt "$COOLDOWN" ]; then
+        if [ "$CURRENT_GOV" == "powersave" ] || [ "$CUR_MHZ" -lt 700 ]; then
+            sudo cpufreq-set -g ondemand -d 600M -u 900M
+            
+            MESSAGE="✅ **Thermal Recovery:** Temp: ${TEMP}°C. Restoring 600-900MHz range."
+            curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$MESSAGE\"}" "$WEBHOOK_URL"
+        fi
     fi
 
     sleep 60
